@@ -1,0 +1,20 @@
+cavity-driven-2d
+Ref:Block implicit multigrid solution of Navier stokes equations in primitive variables, S.P.Vanka, 1986 JCP
+
+channel-DNS-spectral-KMM
+Ref: Space-time correlations of fluctuating velocities in turbulent shear flows[J]. Physical Review E, 2009, 79(4): 046316.
+
+channel-Hybrid-postprocess
+Ref: Assessment of high-resolution methods for numerical simulations of compressible turbulence with shock waves, 2010 JCP
+
+channel-LES-Pullin-Re200k
+source code: LES approach for high Reynolds number wall-bounded flows with application to turbulent channel flow, 2008 JCP
+#implemented code for the generation of initial velocity and pressure field.
+
+isotropic-DNS-3Dspectral
+Ref: Effects of subgrid-scale modeling on Lagrangian statistics in large-eddy simulation. 2008 JOT
+
+shockTube-1d
+source code: Optimized sixth‐order monotonicity‐preserving scheme by nonlinear spectral analysis, Xinliang, Li, IJNMF, 2013
+Ref: A family of high-order targeted ENO schemes for compressible-fluid simulations, 2016 JCP
+#implemented different numerical schemes: 6th Center-WENO, 1st upwind, 3rd upwind, TENO
