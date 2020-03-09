@@ -1,0 +1,21 @@
+	# nx, Iflag_splitting,	Iflag_Characteric, Iflag_init(Sod=0,Shu_Osher=1,lien=2),Iflag_scheme(0=weno5_z)
+      300   0                   1                 1			1
+	# KL,KR,     dt,      t_end
+      -3,4     0.0001d0      1.8d0
+
+! Split_Steger_Warming=0, Split_LF_local=1, Split_LF_Global=2, Split_VanLeer=3
+! iflag_scheme=0  weno5_z（-2,3）
+! iflag_scheme=1  weno5(-2,3)?
+! iflag_scheme=2  weno7（-3,4）
+! iflag_scheme=3  1-upwind
+! iflag_scheme=4  3-upwind
+! iflag_scheme=5  wgvc7
+! iflag_scheme=6  teno5(-2,3)?
+! iflag_scheme=61  teno5_test(-2,3)?
+! iflag_scheme=11 hybrid weno 5 and center 6
+
+! the behavior of 6 and 61 is almost the same
+!else if(Iflag_scheme.eq.100) then   !中心差分格式必须同weno混合才能使用
+!    call center6(Ka,Kb,fpa,fma,f)
+!else if(Iflag_scheme.eq.11) then
+!    call Hweno5_c6(Ka,Kb,fpa,fma,f)

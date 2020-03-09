@@ -1,0 +1,9 @@
+void interpolation_les(variables *var, interpolated *inter, parameters *par);
+void interpolate_Tij_ct__4(double *Tij_cn, double *Tij_ct, parameters *par);
+void Tij_fill_cn(double *Tij, parameters *par, int tag);
+void Txx_fill_ct(double *Tij, parameters *par, int tag);
+void Tyy_fill_ct(double *Tyy_cn, double *Tyy_ct, parameters *par);
+void interpolation_les__2(variables *var, interpolated *inter, parameters *par);
+void interpolate_Tij_ct__2(double *Tij_cn, double *Tij_ct, parameters *par);
+void Tij_fill_cn__2(double *Tij, parameters *par, int tag);
+void Txx_fill_ct__2(double *Tij, parameters *par, int tag);

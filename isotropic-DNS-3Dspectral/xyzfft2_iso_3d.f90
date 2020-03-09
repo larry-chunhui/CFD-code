@@ -1,0 +1,145 @@
+! ---&---1---------2---------3---------4---------5---------6---------7--
+!
+	SUBROUTINE xyzfft2 (C,UP2,U)
+
+	USE FFT
+	IMPLICIT NONE
+
+ 	include 'mpif.h'
+	integer status(MPI_Status_Size)
+	integer ierr
+
+	CHARACTER C
+	REAL*8 UP2(0:NX2-1,0:NY2P-1,0:NZ2-1)
+	COMPLEX*16 U(0:NX/2,0:NY-1,0:NZP-1)
+	INTEGER iy,iz,ix,K
+
+	REAL*8, ALLOCATABLE :: UMX(:)
+	COMPLEX*16, ALLOCATABLE :: UMY(:),UMZ(:),UK(:,:,:),UY(:,:,:)
+
+	ALLOCATE(UMX(0:NX2-1),UMY(0:NY2-1),UMZ(0:NZ2-1),UK(0:NX/2,0:NY2P-1,0:NZ2-1),UY(0:NX/2,0:NY2-1,0:NZP-1))
+
+
+
+	IF(C.EQ.'F') GO TO 10
+	IF(C.EQ.'B') GO TO 20
+
+! ---
+10	DO iy = 0,NY2P-1
+		DO iz = 0,NZ2-1
+			UMX = UP2(0:NX2-1,iy,iz)
+			CALL rfftf(NX2,UMX,trigx2)
+			UK(0,iy,iz) = DCMPLX( UMX(0)/DFLOAT(NX2) , 0.0D0 )
+			DO ix=1,NX/2-1
+				UK(ix,iy,iz) = DCMPLX( UMX(2*ix-1)/DFLOAT(NX2) , UMX(2*ix)/DFLOAT(NX2) )
+			ENDDO
+			IF(INDEX_NXYZ==0) THEN
+				UK(NX/2,iy,iz) = DCMPLX( 0.0D0 , 0.0D0 )
+			ELSE
+				UK(NX/2,iy,iz) = DCMPLX( UMX(NX-1)/DFLOAT(NX2) , 0.0D0 )
+			ENDIF
+		ENDDO
+	ENDDO
+
+	DO ix = 0,NX/2
+		DO iy = 0,NY2P-1
+			UMZ = UK(ix,iy,0:NZ2-1)
+			CALL cfftf(NZ2,UMZ,trigz2)
+			UK(ix,iy,0:NZ/2-1) = UMZ(0:NZ/2-1)/DFLOAT(NZ2)
+			IF(INDEX_NXYZ==0) THEN
+				UK(ix,iy,NZ/2) = DCMPLX( 0.0D0 , 0.0D0 )
+			ELSE
+				UK(ix,iy,NZ/2) = (UMZ(NZ/2)+UMZ(NZ2-NZ/2))/DFLOAT(NZ2+NZ2)
+			ENDIF
+			UK(ix,iy,NZ/2+1:NZ-1) = UMZ(NZ2-NZ/2+1:NZ2-1)/DFLOAT(NZ2)
+		ENDDO
+	ENDDO
+
+	IF(INDEX_Serial==1) THEN
+		UY(0:NX/2,0:NY2-1,0:NZP-1) = UK(0:NX/2,0:NY2P-1,0:NZ-1)
+	ELSE
+		DO K = 0,NPROC-1
+			CALL MPI_SENDRECV(UK(0:NX/2,0:NY2P-1,K*NZP:(K+1)*NZP-1),(NX/2+1)*NY2P*NZP,MPI_COMPLEX16,K,10, &
+							UY(0:NX/2,K*NY2P:(K+1)*NY2P-1,0:NZP-1),(NX/2+1)*NY2P*NZP,MPI_COMPLEX16,K,10,MPI_COMM_WORLD,STATUS,ierr)
+		ENDDO
+
+		CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+	ENDIF
+
+	DO iz = 0,NZP-1
+		DO ix = 0,NX/2
+			UMY = UY(ix,0:NY2-1,iz)
+			CALL cfftf(NY2,UMY,trigy2)
+			U(ix,0:NY/2-1,iz) = UMY(0:NY/2-1)/DFLOAT(NY2)
+			IF(INDEX_NXYZ==0) THEN
+				U(ix,NY/2,iz) = DCMPLX( 0.0D0 , 0.0D0 )
+			ELSE
+				U(ix,NY/2,iz) = (UMY(NY/2)+UMY(NY2-NY/2))/DFLOAT(NY2+NY2)
+			ENDIF
+			U(ix,NY/2+1:NY-1,iz) = UMY(NY2-NY/2+1:NY2-1)/DFLOAT(NY2)
+		ENDDO
+	ENDDO
+
+	GOTO 30
+
+! ---B
+20	DO iz = 0,NZP-1
+		DO ix = 0,NX/2
+			UMY(0:NY/2) = U(ix,0:NY/2,iz)
+			UMY(NY/2+1:NY2-NY/2-1) = DCMPLX(0.0D0,0.0D0)
+			UMY(NY2-NY/2) = U(ix,NY/2,iz)
+			UMY(NY2-NY/2+1:NY2-1) = U(ix,NY/2+1:NY-1,iz)
+			CALL cfftb(NY2,UMY,trigy2)
+			UY(ix,0:NY2-1,iz) = UMY
+		ENDDO
+	ENDDO	  
+ 
+	IF(INDEX_Serial==1) THEN
+		UK(0:NX/2,0:NY2P-1,0:NZ-1) = UY(0:NX/2,0:NY2-1,0:NZP-1)
+	ELSE
+		DO K = 0,NPROC-1
+			CALL MPI_SENDRECV(UY(0:NX/2,K*NY2P:(K+1)*NY2P-1,0:NZP-1),(NX/2+1)*NY2P*NZP,MPI_COMPLEX16,K,10, &
+							UK(0:NX/2,0:NY2P-1,K*NZP:(K+1)*NZP-1),(NX/2+1)*NY2P*NZP,MPI_COMPLEX16,K,10,MPI_COMM_WORLD,STATUS,ierr)
+		ENDDO
+
+		CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+	ENDIF
+
+	DO ix = 0,NX/2
+		DO iy = 0,NY2P-1
+			UMZ(0:NZ/2) = UK(ix,iy,0:NZ/2)
+			UMZ(NZ/2+1:NZ2-NZ/2-1) = DCMPLX(0.0D0,0.0D0)
+			UMZ(NZ2-NZ/2) = UK(ix,iy,NZ/2)
+			UMZ(NZ2-NZ/2+1:NZ2-1) = UK(ix,iy,NZ/2+1:NZ-1)
+			CALL cfftb(NZ2,UMZ,trigz2)
+			UK(ix,iy,0:NZ2-1) = UMZ
+		ENDDO
+	ENDDO
+
+	DO iy = 0,NY2P-1
+		DO iz = 0,NZ2-1
+! 		    if(my_id.eq.0) then
+! 			   write(*,*)NY2-1,NZ2P-1
+! 		       write(*,*)"myid",my_id,iy,iz
+! 			endif
+
+			UMX(0) = DREAL(UK(0,iy,iz))
+			DO ix=1,NX/2-1
+				UMX(2*ix-1) = DREAL(UK(ix,iy,iz))
+				UMX(2*ix  ) = DIMAG(UK(ix,iy,iz))
+			ENDDO
+			UMX(NX-1) = DREAL(UK(NX/2,iy,iz))
+			UMX(NX:NX2-1) = 0.0D0
+			CALL rfftb(NX2,UMX,trigx2)
+			UP2(0:NX2-1,iy,iz) = UMX
+		ENDDO
+	ENDDO
+
+! ---
+30	DEALLOCATE(UMX,UMY,UMZ,UK,UY)
+
+	RETURN
+	END
+
+!	ALLOCATE(UMX(0:NX2-1),UMY(0:NY2-1),UMZ(0:NZ2-1),UK(0:NX/2,0:NY2P-1,0:NZ2-1),UY(0:NX/2,0:NY2-1,0:NZP-1))
+!,UK(0:NX/2,0:NY2P-1,0:NZ2-1)

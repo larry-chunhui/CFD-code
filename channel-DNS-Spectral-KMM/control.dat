@@ -1,0 +1,14 @@
+NX	NY	NZ
+128,   128,   128
+ZL      XL      Re       DT
+1.0D0,  2.0D0,  2.8D3,   5.0D-3
+IBC
+0
+ICONT   NSTEPS     IDUMFRQ  IPRNFRQ
+0,      30000,     1000,       1000
+
+
+!computational domain(4pi*2*2pi) in streamwise, wall normal direction and spanwise
+!the mesh(128*128*128)  Re_tau=187 exactly the same as KMM 1987 JFM
+!ICONT =1 initial field:need the velocity field file(extra file)
+!ICONT =0 initial field:evolves from laminar flow with random disturb 
